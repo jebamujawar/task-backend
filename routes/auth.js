@@ -2,34 +2,23 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
 
-// SIGNUP
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Signup
 router.post("/signup", async (req, res) => {
+  const { name, email, password } = req.body;
   try {
-    const { name, email, password } = req.body;
+    const exists = await User.findOne({ email });
+    if (exists) return res.status(400).json({ error: "User exists" });
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ error: "All fields are required" });
-    }
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ error: "User already exists" });
-    }
-
-    const user = new User({ name, email, password });
-    await user.save();
-
-    const token = user.generateToken();
-
-    res.status(201).json({
-      token,
-      user: { id: user._id, name: user.name, email: user.email }
-    });
+    const hashed = await bcrypt.hash(password, 10);
+    const user = await User.create({ name, email, password: hashed });
+    res.json({ message: "User created", userId: user._id });
   } catch (err) {
-    console.error("Signup error:", err);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ error: err.message });
   }
 });
+
 
 // LOGIN
 router.post("/login", async (req, res) => {
