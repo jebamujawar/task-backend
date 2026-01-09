@@ -1,15 +1,34 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const express = require("express");
+const router = express.Router();
+const User = require("../models/User");
 
-module.exports = async function (req, res, next) {
-  const token = req.header('Authorization')?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'No token, authorization denied' });
-
+router.post("/login", async (req, res) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = { id: decoded.id };
-    next();
+    const { email, password } = req.body;
+
+    // 1. Check user
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // 2. Check password
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // 3. Generate token
+    const token = user.generateToken();
+
+    res.json({
+      token,
+      user: { id: user._id, name: user.name, email: user.email }
+    });
   } catch (err) {
-    res.status(401).json({ error: 'Token is not valid' });
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
   }
-};
+});
+
+module.exports = router;
