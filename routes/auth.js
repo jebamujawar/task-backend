@@ -4,7 +4,7 @@ const User = require("../models/User");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Signup
+/*Signup
 router.post("/signup", async (req, res) => {
   const { name, email, password } = req.body;
   try {
@@ -17,7 +17,45 @@ router.post("/signup", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});*/
+
+router.post("/signup", async (req, res) => {
+  try {
+    console.log("SIGNUP BODY:", req.body);
+
+    const { name, email, password } = req.body;
+
+    console.log("ENV CHECK:", {
+      mongo: !!process.env.MONGO_URL,
+      jwt: !!process.env.JWT_SECRET
+    });
+
+    const existingUser = await User.findOne({ email });
+    console.log("EXISTING USER:", existingUser);
+
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists" });
+    }
+
+    const user = new User({ name, email, password });
+    await user.save();
+
+    console.log("USER SAVED");
+
+    const token = user.generateToken();
+    console.log("TOKEN GENERATED");
+
+    res.status(201).json({
+      token,
+      user: { id: user._id, name: user.name, email: user.email }
+    });
+
+  } catch (err) {
+    console.error("🔥 SIGNUP CRASH:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
+
 
 
 // LOGIN
