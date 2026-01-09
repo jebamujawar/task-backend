@@ -7,17 +7,18 @@ router.post("/signup", async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Check if user exists
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
 
-    // Create new user
     const user = new User({ name, email, password });
     await user.save();
 
-    // Generate token
     const token = user.generateToken();
 
     res.status(201).json({
@@ -25,7 +26,7 @@ router.post("/signup", async (req, res) => {
       user: { id: user._id, name: user.name, email: user.email }
     });
   } catch (err) {
-    console.error(err);
+    console.error("Signup error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -34,6 +35,10 @@ router.post("/signup", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password required" });
+    }
 
     const user = await User.findOne({ email });
     if (!user) {
@@ -52,7 +57,7 @@ router.post("/login", async (req, res) => {
       user: { id: user._id, name: user.name, email: user.email }
     });
   } catch (err) {
-    console.error(err);
+    console.error("Login error:", err);
     res.status(500).json({ error: "Server error" });
   }
 });

@@ -22,7 +22,14 @@ userSchema.methods.comparePassword = function (password) {
 
 // Generate JWT token
 userSchema.methods.generateToken = function () {
-  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT_SECRET missing");
+  }
+  return jwt.sign(
+    { id: this._id },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
 };
 
 module.exports = mongoose.model('User', userSchema);
